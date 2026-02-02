@@ -46,6 +46,11 @@ class _PresentationScreenState extends State<PresentationScreen> with WidgetsBin
 
     // Hide system UI
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
+
+    // Precache initial images after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _precacheAdjacentImages();
+    });
   }
 
   @override
@@ -122,6 +127,27 @@ class _PresentationScreenState extends State<PresentationScreen> with WidgetsBin
     _lockService.lockDevice();
   }
 
+  void _precacheAdjacentImages() {
+    if (!mounted) return;
+
+    final photos = widget.collection.photos;
+    final length = photos.length;
+
+    // Precache next 2 images
+    for (int i = 1; i <= 2; i++) {
+      final nextIndex = (_currentIndex + i) % length;
+      final nextPhoto = photos[nextIndex];
+      precacheImage(FileImage(File(nextPhoto.path)), context);
+    }
+
+    // Precache previous 2 images
+    for (int i = 1; i <= 2; i++) {
+      final prevIndex = (_currentIndex - i + length) % length;
+      final prevPhoto = photos[prevIndex];
+      precacheImage(FileImage(File(prevPhoto.path)), context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<AppProvider>().settings;
@@ -148,11 +174,15 @@ class _PresentationScreenState extends State<PresentationScreen> with WidgetsBin
               // Photo viewer with infinite loop
               PageView.builder(
                 controller: _pageController,
+                allowImplicitScrolling: true,
                 onPageChanged: (index) {
                   setState(() {
                     _currentIndex = index % widget.collection.photos.length;
                   });
                   _resetAutoLockTimer();
+
+                  // Precache adjacent images when page changes
+                  _precacheAdjacentImages();
                 },
                 itemCount: null, // Infinite scroll
                 itemBuilder: (context, index) {
