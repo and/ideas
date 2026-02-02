@@ -28,11 +28,17 @@ class _PresentationScreenState extends State<PresentationScreen> with WidgetsBin
   final LockService _lockService = LockService();
   bool _isExiting = false;
 
+  // Large offset to allow infinite scrolling in both directions
+  static const int _infiniteOffset = 10000;
+
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
-    _pageController = PageController(initialPage: _currentIndex);
+
+    // Start at a high offset to allow infinite scrolling backwards
+    final int initialPage = _infiniteOffset * widget.collection.photos.length + widget.initialIndex;
+    _pageController = PageController(initialPage: initialPage);
     WidgetsBinding.instance.addObserver(this);
 
     // Enter presentation mode
